@@ -1,0 +1,85 @@
+[
+  {
+    "input": {
+      "category_context": "laptops",
+      "product": {
+        "sku_id": "LP-001",
+        "title": "Acer Aspire 3 15.6\" Laptop Intel Core i3",
+        "brand": "Acer",
+        "category": "laptops",
+        "price": 349.99,
+        "attributes": {
+          "processor": "Intel Core i3-1215U",
+          "ram_gb": 8,
+          "storage_gb": 256,
+          "display_inches": 15.6,
+          "weight_kg": 1.9,
+          "battery_hours": 8
+        }
+      }
+    },
+    "output": {
+      "use_case_tags": ["student", "home_office", "family_shared"],
+      "persona_tags": ["budget_buyer", "beginner_friendly"],
+      "trust_signals": { "warranty_months": null, "certifications": [], "sustainability_notes": "" },
+      "agent_summary": "Affordable 15.6\" laptop for everyday tasks and light productivity. Ideal for students and home users on a budget.",
+      "confidence_score": 0.82,
+      "evidence_fields": ["price", "processor", "ram_gb", "battery_hours"]
+    }
+  },
+  {
+    "input": {
+      "category_context": "laptops",
+      "product": {
+        "sku_id": "LP-002",
+        "title": "ASUS ProArt Studiobook 16 OLED Creator Laptop",
+        "brand": "ASUS",
+        "category": "laptops",
+        "price": 2499.00,
+        "attributes": {
+          "processor": "Intel Core Ultra 9 185H with NPU",
+          "ram_gb": 64,
+          "storage_gb": 2000,
+          "gpu": "NVIDIA RTX 4070",
+          "display_type": "OLED",
+          "warranty": "2 years international"
+        }
+      }
+    },
+    "output": {
+      "use_case_tags": ["video_editing", "photo_editing", "3d_rendering", "local_ai_models", "coding_dev"],
+      "persona_tags": ["power_user", "creator", "ai_enthusiast"],
+      "trust_signals": { "warranty_months": 24, "certifications": [], "sustainability_notes": "" },
+      "agent_summary": "Professional OLED creator laptop with NPU and RTX 4070, built for video editing, 3D rendering, and local AI workloads.",
+      "confidence_score": 0.94,
+      "evidence_fields": ["processor", "ram_gb", "gpu", "display_type", "warranty"]
+    }
+  },
+  {
+    "input": {
+      "category_context": "laptops",
+      "product": {
+        "sku_id": "LP-003",
+        "title": "Lenovo IdeaPad Gaming 3 15.6\"",
+        "brand": "Lenovo",
+        "category": "laptops",
+        "price": 799.00,
+        "attributes": {
+          "processor": "AMD Ryzen 5 7535HS",
+          "ram_gb": 16,
+          "gpu": "NVIDIA RTX 3050",
+          "display_hz": 120,
+          "weight_kg": 2.2
+        }
+      }
+    },
+    "output": {
+      "use_case_tags": ["gaming_aaa", "gaming_casual", "coding_dev"],
+      "persona_tags": ["gamer", "budget_buyer"],
+      "trust_signals": { "warranty_months": null, "certifications": [], "sustainability_notes": "" },
+      "agent_summary": "Mid-range gaming laptop with RTX 3050 and 120Hz display, capable of running modern AAA titles at medium settings.",
+      "confidence_score": 0.88,
+      "evidence_fields": ["gpu", "display_hz", "processor", "ram_gb"]
+    }
+  }
+]
