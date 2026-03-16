@@ -21,6 +21,8 @@ steps:
       - build
       - --build-arg
       - NEXT_PUBLIC_API_URL=$_API_URL
+      - --build-arg
+      - NEXT_PUBLIC_DEV_USER_EMAIL=$_DEV_USER_EMAIL
       - -t
       - gcr.io/$PROJECT_ID/catalog-ui:$_TAG
       - -f
@@ -72,6 +74,7 @@ substitutions:
   _TAG: latest  # Override with COMMIT_SHA in trigger config or --substitutions
   _API_URL: ""  # Cloud Run API URL, set after first deploy
   _UI_URL: ""  # Cloud Run UI URL, set after first deploy
+  _DEV_USER_EMAIL: ""  # Default user email for UI auth
 
 options:
   logging: CLOUD_LOGGING_ONLY
