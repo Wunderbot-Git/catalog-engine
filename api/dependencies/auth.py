@@ -9,7 +9,8 @@ from api.models import RoleEnum, User
 
 logger = logging.getLogger(__name__)
 
-IAP_AUDIENCE = os.environ.get("IAP_AUDIENCE", "")
+_raw_iap = os.environ.get("IAP_AUDIENCE", "")
+IAP_AUDIENCE = _raw_iap if _raw_iap not in ("", "disabled", "placeholder") else ""
 
 
 def _validate_iap_jwt(iap_jwt: str, expected_audience: str) -> str:

@@ -111,10 +111,8 @@ echo ">>> Step 4: Creating Secret Manager secrets..."
 create_secret() {
   local name="$1"
   local value="$2"
-  local allow_empty="${3:-false}"
   # Use placeholder if value is empty (Cloud Run requires a version to exist)
-  # Exception: some secrets (e.g. IAP_AUDIENCE) must stay empty to disable features
-  if [[ -z "${value}" && "${allow_empty}" != "--allow-empty" ]]; then
+  if [[ -z "${value}" ]]; then
     value="placeholder"
   fi
   if gcloud secrets describe "${name}" --project="${TARGET_PROJECT}" &>/dev/null; then
@@ -129,7 +127,7 @@ DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${TARG
 
 create_secret "catalog-database-url" "${DB_URL}"
 create_secret "catalog-export-bucket" "${BUCKET}"
-create_secret "catalog-iap-audience" "" --allow-empty
+create_secret "catalog-iap-audience" "disabled"
 create_secret "catalog-algolia-app-id" "${ALGOLIA_APP_ID}"
 create_secret "catalog-algolia-api-key" "${ALGOLIA_API_KEY}"
 create_secret "catalog-algolia-index-name" "${ALGOLIA_INDEX_NAME}"
