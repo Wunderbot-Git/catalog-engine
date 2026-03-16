@@ -17,6 +17,10 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       ENV: ${ENV:-development}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-}
+      GOOGLE_CLOUD_LOCATION: ${GOOGLE_CLOUD_LOCATION:-us-central1}
+    volumes:
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
     ports:
       - "8080:8080"
     depends_on:
