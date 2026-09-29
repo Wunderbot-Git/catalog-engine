@@ -2,7 +2,7 @@
 
 ## What It Does
 
-Internal system for Alkosto (Colombian retailer) that takes raw product catalog data and enriches it with AI-generated semantic attributes (use case tags, persona tags, trust signals, agent summaries) to power AI shopping agents.
+Internal system for Alkosto (Colombian retailer) that takes raw product catalog data and enriches it with AI-generated semantic attributes (use case tags, persona tags, trust signals, agent summaries) and flags missing product attributes to power AI shopping agents.
 
 ## Architecture
 
@@ -77,8 +77,8 @@ Internal system for Alkosto (Colombian retailer) that takes raw product catalog 
 
 | Layer | Tests | Runner | Details |
 |---|---|---|---|
-| Backend | 100 | pytest + httpx | 12 test files, per-test DB transaction rollback |
-| Frontend | 29 | vitest + RTL | 3 test files, jsdom environment, mocked API |
+| Backend | 107 | pytest + httpx | 12 test files, per-test DB transaction rollback |
+| Frontend | 33 | vitest + RTL | 3 test files, jsdom environment, mocked API |
 | Load | 1 script | k6 | 5 phases, 1,000 SKU scale validation |
 
 ## Metrics (Prometheus)

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import ChipInput from "@/components/ChipInput";
 import ScoreBar from "@/components/ScoreBar";
 import { fetchSku, fetchVersions, fetchUsers, fetchComments, submitReview, UserInfo, CommentEntry } from "@/lib/api";
-import { SkuDetail, VersionEntry } from "@/types/api";
+import { SkuDetail, SuggestedAttribute, VersionEntry } from "@/types/api";
 
 interface EditState {
   use_case_tags: string[];
@@ -18,6 +18,13 @@ interface EditState {
   agent_summary: string;
   confidence_score: number;
   evidence_fields: string[];
+  suggested_attributes: SuggestedAttribute[];
+}
+
+function hasInvalidSuggestion(e: EditState): boolean {
+  return e.suggested_attributes.some(
+    (s) => s.source === "product_text" && (s.value === null || String(s.value).trim() === "")
+  );
 }
 
 function enrichmentToEdit(e: SkuDetail["enrichment"]): EditState | null {
@@ -34,6 +41,7 @@ function enrichmentToEdit(e: SkuDetail["enrichment"]): EditState | null {
     agent_summary: e.agent_summary,
     confidence_score: e.confidence_score,
     evidence_fields: [...e.evidence_fields],
+    suggested_attributes: (e.suggested_attributes ?? []).map((s) => ({ ...s })),
   };
 }
 
@@ -76,7 +84,8 @@ export default function ReviewWorkspace() {
     const draftKey = `draft-${skuId}`;
     const saved = localStorage.getItem(draftKey);
     if (saved) {
-      setEdit(JSON.parse(saved));
+      const draft = JSON.parse(saved);
+      setEdit({ ...draft, suggested_attributes: draft.suggested_attributes ?? [] });
       setDirty(true);
     } else {
       setEdit(enrichmentToEdit(s.enrichment));
@@ -123,7 +132,7 @@ export default function ReviewWorkspace() {
   };
 
   const handleApproveWithEdits = async () => {
-    if (!versionId || !edit) return;
+    if (!versionId || !edit || hasInvalidSuggestion(edit)) return;
     await submitReview(skuId, {
       action: "approve_with_edits",
       version_id: versionId,
@@ -203,6 +212,23 @@ export default function ReviewWorkspace() {
   const updateEdit = (patch: Partial<EditState>) => {
     setEdit((prev) => (prev ? { ...prev, ...patch } : prev));
     setDirty(true);
+  };
+
+  const updateSuggestionValue = (index: number, raw: string) => {
+    if (!edit) return;
+    const next = edit.suggested_attributes.map((s, i) => {
+      if (i !== index) return s;
+      // Store canonical numbers ("15.6") as numbers; partial input ("15.") stays text.
+      const asNumber = Number(raw);
+      const isNumber = raw.trim() !== "" && String(asNumber) === raw.trim();
+      return { ...s, value: isNumber ? asNumber : raw };
+    });
+    updateEdit({ suggested_attributes: next });
+  };
+
+  const removeSuggestion = (index: number) => {
+    if (!edit) return;
+    updateEdit({ suggested_attributes: edit.suggested_attributes.filter((_, i) => i !== index) });
   };
 
   if (!sku) return <div className="p-6">Loading...</div>;
@@ -328,6 +354,51 @@ export default function ReviewWorkspace() {
                 />
               </div>
               <div>
+                <p className="text-xs font-medium text-gray-500">
+                  Suggested attributes ({edit.suggested_attributes.length})
+                </p>
+                {edit.suggested_attributes.length === 0 ? (
+                  <p className="text-xs text-gray-400 mt-1">No missing attributes suggested</p>
+                ) : (
+                  <ul className="mt-1 space-y-2" aria-label="Suggested attributes">
+                    {edit.suggested_attributes.map((s, i) => (
+                      <li key={s.key} className="border rounded p-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-medium">{s.key}</span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded ${
+                              s.source === "product_text"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {s.source === "product_text" ? "from text" : "missing"}
+                          </span>
+                          <button
+                            onClick={() => removeSuggestion(i)}
+                            aria-label={`Remove ${s.key}`}
+                            className="ml-auto text-gray-400 hover:text-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {s.source === "product_text" && (
+                          <input
+                            aria-label={`Value for ${s.key}`}
+                            value={s.value === null ? "" : String(s.value)}
+                            onChange={(e) => updateSuggestionValue(i, e.target.value)}
+                            className={`border rounded px-2 py-1 w-full mt-1 ${
+                              String(s.value ?? "").trim() === "" ? "border-red-500" : ""
+                            }`}
+                          />
+                        )}
+                        {s.reason && <p className="text-gray-500 mt-1">{s.reason}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
                 <span className="text-xs font-medium text-gray-500">Confidence: </span>
                 <span
                   className={`text-xs font-bold ${
@@ -393,9 +464,20 @@ export default function ReviewWorkspace() {
                 const selected = versions.find((v) => v.version_id === diffVersionId);
                 const latest = versions[0];
                 if (!selected || !latest || selected.version_id === latest.version_id) return null;
-                const fields = ["use_case_tags", "persona_tags", "agent_summary", "confidence_score"] as const;
+                const fields = [
+                  "use_case_tags",
+                  "persona_tags",
+                  "agent_summary",
+                  "confidence_score",
+                  "suggested_attributes",
+                ] as const;
                 type FieldKey = typeof fields[number];
                 const format = (v: VersionEntry, f: FieldKey) => {
+                  if (f === "suggested_attributes") {
+                    return (v.suggested_attributes ?? [])
+                      .map((s) => (s.value === null ? s.key : `${s.key}=${s.value}`))
+                      .join(", ");
+                  }
                   const val = v[f];
                   return Array.isArray(val) ? val.join(", ") : String(val ?? "");
                 };
@@ -487,7 +569,7 @@ export default function ReviewWorkspace() {
         </button>
         <button
           onClick={handleApproveWithEdits}
-          disabled={!dirty || !versionId}
+          disabled={!dirty || !versionId || !edit || hasInvalidSuggestion(edit)}
           className="px-4 py-2 bg-green-500 text-white rounded text-sm disabled:opacity-30 hover:bg-green-600"
         >
           Approve with edits

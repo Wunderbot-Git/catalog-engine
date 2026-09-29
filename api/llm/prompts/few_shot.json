@@ -24,7 +24,12 @@
       "trust_signals": { "warranty_months": null, "certifications": [], "sustainability_notes": "" },
       "agent_summary": "Affordable 15.6\" laptop for everyday tasks and light productivity. Ideal for students and home users on a budget.",
       "confidence_score": 0.82,
-      "evidence_fields": ["price", "processor", "ram_gb", "battery_hours"]
+      "evidence_fields": ["price", "processor", "ram_gb", "battery_hours"],
+      "suggested_attributes": [
+        { "key": "gpu", "value": null, "source": "missing", "reason": "Integrated vs dedicated graphics decides gaming and editing fit." },
+        { "key": "operating_system", "value": null, "source": "missing", "reason": "Shoppers filter laptops by Windows, ChromeOS or no OS." },
+        { "key": "display_resolution", "value": null, "source": "missing", "reason": "Resolution affects text sharpness on a 15.6\" screen." }
+      ]
     }
   },
   {
@@ -52,7 +57,12 @@
       "trust_signals": { "warranty_months": 24, "certifications": [], "sustainability_notes": "" },
       "agent_summary": "Professional OLED creator laptop with NPU and RTX 4070, built for video editing, 3D rendering, and local AI workloads.",
       "confidence_score": 0.94,
-      "evidence_fields": ["processor", "ram_gb", "gpu", "display_type", "warranty"]
+      "evidence_fields": ["processor", "ram_gb", "gpu", "display_type", "warranty"],
+      "suggested_attributes": [
+        { "key": "display_inches", "value": 16, "source": "product_text", "reason": "Title states a 16\" display." },
+        { "key": "weight_kg", "value": null, "source": "missing", "reason": "Portability matters for creators working on location." },
+        { "key": "battery_hours", "value": null, "source": "missing", "reason": "Battery life is a key comparison point for laptops." }
+      ]
     }
   },
   {
@@ -79,7 +89,12 @@
       "trust_signals": { "warranty_months": null, "certifications": [], "sustainability_notes": "" },
       "agent_summary": "Mid-range gaming laptop with RTX 3050 and 120Hz display, capable of running modern AAA titles at medium settings.",
       "confidence_score": 0.88,
-      "evidence_fields": ["gpu", "display_hz", "processor", "ram_gb"]
+      "evidence_fields": ["gpu", "display_hz", "processor", "ram_gb"],
+      "suggested_attributes": [
+        { "key": "display_inches", "value": 15.6, "source": "product_text", "reason": "Title states a 15.6\" display." },
+        { "key": "storage_gb", "value": null, "source": "missing", "reason": "Storage size limits how many games fit installed." },
+        { "key": "battery_hours", "value": null, "source": "missing", "reason": "Gaming laptops vary widely in battery life." }
+      ]
     }
   }
 ]

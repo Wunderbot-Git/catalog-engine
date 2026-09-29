@@ -23,6 +23,13 @@ export interface SkuListResponse {
   page_size: number;
 }
 
+export interface SuggestedAttribute {
+  key: string;
+  value: string | number | boolean | null;
+  source: "product_text" | "missing";
+  reason: string;
+}
+
 export interface Enrichment {
   version_id: string;
   generated_by: string;
@@ -32,6 +39,7 @@ export interface Enrichment {
   agent_summary: string;
   confidence_score: number;
   evidence_fields: string[];
+  suggested_attributes: SuggestedAttribute[];
   created_at: string;
   review_status: string;
 }
@@ -61,6 +69,7 @@ export interface VersionEntry {
   agent_summary: string;
   confidence_score: number;
   evidence_fields: string[];
+  suggested_attributes: SuggestedAttribute[];
   created_at: string;
   review_status: string;
   reviewer_id: string | null;

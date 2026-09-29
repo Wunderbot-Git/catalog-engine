@@ -35,6 +35,10 @@ const mockSku = {
     agent_summary: "A great laptop for students.",
     confidence_score: 0.85,
     evidence_fields: ["price", "ram"],
+    suggested_attributes: [
+      { key: "display_inches", value: 15.6, source: "product_text" as const, reason: "Title states 15.6\"." },
+      { key: "operating_system", value: null, source: "missing" as const, reason: "Shoppers filter by OS." },
+    ],
     created_at: "2025-01-01T00:00:00Z",
     review_status: "PENDING_REVIEW",
   },
@@ -60,6 +64,7 @@ const mockVersions = [
     agent_summary: "A great laptop for students.",
     confidence_score: 0.85,
     evidence_fields: [],
+    suggested_attributes: [],
     created_at: "2025-01-01T00:00:00Z",
     review_status: "PENDING_REVIEW",
     reviewer_id: null,
@@ -171,6 +176,52 @@ describe("Review Workspace", () => {
       const btn = screen.getByText("Approve with edits");
       expect(btn).not.toBeDisabled();
     });
+  });
+
+  it("renders suggested attributes with source badges", async () => {
+    render(<ReviewWorkspace />);
+    await waitFor(() => expect(screen.getByText("Suggested attributes (2)")).toBeInTheDocument());
+    expect(screen.getByText("display_inches")).toBeInTheDocument();
+    expect(screen.getByText("from text")).toBeInTheDocument();
+    expect(screen.getByText("operating_system")).toBeInTheDocument();
+    expect(screen.getByText("missing")).toBeInTheDocument();
+    expect(screen.getByLabelText("Value for display_inches")).toHaveValue("15.6");
+  });
+
+  it("removing a suggestion sends approve with edits without it", async () => {
+    const user = userEvent.setup();
+    render(<ReviewWorkspace />);
+    await waitFor(() => expect(screen.getByText("operating_system")).toBeInTheDocument());
+
+    await user.click(screen.getByLabelText("Remove operating_system"));
+    await user.click(screen.getByText("Approve with edits"));
+
+    const call = vi.mocked(submitReview).mock.lastCall!;
+    const edited = (call[1] as { edited_enrichment: { suggested_attributes: unknown[] } })
+      .edited_enrichment;
+    expect(edited.suggested_attributes).toEqual([
+      { key: "display_inches", value: 15.6, source: "product_text", reason: 'Title states 15.6".' },
+    ]);
+  });
+
+  it("suggestion value input accepts decimals", async () => {
+    const user = userEvent.setup();
+    render(<ReviewWorkspace />);
+    await waitFor(() => expect(screen.getByLabelText("Value for display_inches")).toBeInTheDocument());
+
+    const input = screen.getByLabelText("Value for display_inches");
+    await user.clear(input);
+    await user.type(input, "14.5");
+    expect(input).toHaveValue("14.5");
+  });
+
+  it("empty value for a text suggestion blocks approve with edits", async () => {
+    const user = userEvent.setup();
+    render(<ReviewWorkspace />);
+    await waitFor(() => expect(screen.getByLabelText("Value for display_inches")).toBeInTheDocument());
+
+    await user.clear(screen.getByLabelText("Value for display_inches"));
+    expect(screen.getByText("Approve with edits")).toBeDisabled();
   });
 
   it("reject modal requires reason min 10 chars", async () => {

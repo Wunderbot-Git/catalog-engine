@@ -44,7 +44,7 @@ repo/
   ui/               # Next.js frontend (App Router)
   ui/src/test/      # Frontend tests (vitest + React Testing Library)
   infra/            # Prometheus + Grafana configs and dashboards
-  tests/            # Backend tests (pytest + httpx, 100 tests)
+  tests/            # Backend tests (pytest + httpx, 107 tests)
   tests/load/       # k6 load test scripts
   cloudbuild.yaml   # Cloud Build pipeline (builds + deploys API + UI to Cloud Run)
 ```
@@ -139,9 +139,9 @@ Structured JSON logging via `StructuredFormatter` with context fields: `job_id`,
 
 ## Tests
 
-**Backend:** 100 tests across 12 files. Run with `PYTHONPATH=. pytest -x` from project root. Tests use a real Postgres test DB (`catalog_engine_test`) with per-test transaction rollback. Fixtures in `tests/conftest.py`. `auth_headers(email)` helper for auth header injection.
+**Backend:** 107 tests across 12 files. Run with `PYTHONPATH=. pytest -x` from project root. Tests use a real Postgres test DB (`catalog_engine_test`) with per-test transaction rollback. Fixtures in `tests/conftest.py`. `auth_headers(email)` helper for auth header injection.
 
-**Frontend:** 29 tests across 3 files. Run with `cd ui && npx vitest run`. Uses jsdom environment with mocked API calls and Next.js navigation.
+**Frontend:** 33 tests across 3 files. Run with `cd ui && npx vitest run`. Uses jsdom environment with mocked API calls and Next.js navigation.
 
 **Load:** k6 script at `tests/load/k6_load_test.js` — 5 phases covering ingestion (1,000 SKUs), audit, enrichment, review, and export.
 

@@ -10,6 +10,7 @@ from api.llm.base import (
 )
 from api.llm.types import (
     EnrichmentResult,
+    SuggestedAttribute,
     TrustSignals,
 )
 from api.main import app
@@ -141,6 +142,48 @@ def test_enrich_confidence_out_of_range_raises_error():
         )
 
 
+def test_suggested_attributes_keys_are_slugified_and_deduped():
+    result = _mock_enrichment_result(
+        suggested_attributes=[
+            SuggestedAttribute(key="Operating System", source="missing"),
+            SuggestedAttribute(key="operating-system", source="missing"),
+            SuggestedAttribute(key="Display Inches", value=15.6, source="product_text"),
+        ]
+    )
+    assert [s.key for s in result.suggested_attributes] == ["operating_system", "display_inches"]
+
+
+def test_suggested_attributes_capped_at_10():
+    result = _mock_enrichment_result(
+        suggested_attributes=[
+            SuggestedAttribute(key=f"attr_{i}", source="missing") for i in range(15)
+        ]
+    )
+    assert len(result.suggested_attributes) == 10
+    assert result.suggested_attributes[0].key == "attr_0"
+
+
+def test_suggested_attribute_missing_source_rejects_value():
+    with pytest.raises(ValidationError, match="value must be null"):
+        SuggestedAttribute(key="gpu", value="RTX 4060", source="missing")
+
+
+def test_suggested_attribute_product_text_requires_value():
+    with pytest.raises(ValidationError, match="value is required"):
+        SuggestedAttribute(key="display_inches", source="product_text")
+
+
+def test_enrichment_result_defaults_to_no_suggestions():
+    result = EnrichmentResult(
+        use_case_tags=["student"],
+        persona_tags=["buyer"],
+        trust_signals=TrustSignals(),
+        agent_summary="Test",
+        confidence_score=0.8,
+    )
+    assert result.suggested_attributes == []
+
+
 # --- Endpoint integration tests ---
 
 
@@ -164,6 +207,38 @@ async def test_enrich_creates_enrichment_version(client, db_session):
         assert version.sku_id == "SKU-1"
         assert version.generated_by == GeneratedByEnum.LLM
         assert version.use_case_tags == ["student", "home_office"]
+    finally:
+        _clear_llm_override()
+
+
+@pytest.mark.asyncio
+async def test_enrich_persists_suggested_attributes_and_drops_existing_keys(client, db_session):
+    admin = _create_admin(db_session)
+    _create_product(db_session)  # already has processor and ram_gb
+    result = _mock_enrichment_result(
+        suggested_attributes=[
+            SuggestedAttribute(key="display_inches", value=15, source="product_text"),
+            SuggestedAttribute(key="RAM GB", source="missing"),
+            SuggestedAttribute(key="operating_system", source="missing", reason="Filter."),
+        ]
+    )
+    _override_llm(MockLLMClient(result=result))
+
+    try:
+        response = await client.post(
+            "/skus/SKU-1/enrich", json={}, headers=auth_headers(admin.email)
+        )
+        assert response.status_code == 200
+
+        version = db_session.query(EnrichmentVersion).first()
+        assert version.suggested_attributes == [
+            {"key": "display_inches", "value": 15, "source": "product_text", "reason": ""},
+            {"key": "operating_system", "value": None, "source": "missing", "reason": "Filter."},
+        ]
+
+        detail = await client.get("/skus/SKU-1", headers=auth_headers(admin.email))
+        suggested = detail.json()["enrichment"]["suggested_attributes"]
+        assert [s["key"] for s in suggested] == ["display_inches", "operating_system"]
     finally:
         _clear_llm_override()
 

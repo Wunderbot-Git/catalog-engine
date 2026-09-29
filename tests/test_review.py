@@ -159,6 +159,38 @@ async def test_approve_with_edits_creates_new_human_version(client, db_session):
     assert len(versions) == 2
     human_version = [vv for vv in versions if vv.generated_by == GeneratedByEnum.HUMAN][0]
     assert human_version.use_case_tags == ["gaming_casual"]
+    assert human_version.suggested_attributes == []
+
+
+@pytest.mark.asyncio
+async def test_approve_with_edits_keeps_reviewed_suggested_attributes(client, db_session):
+    admin = _create_user(db_session, "admin@test.com", RoleEnum.ADMIN)
+    _create_product(db_session)
+    v, _ = _create_enrichment(db_session, "SKU-1")
+
+    edited = {
+        "use_case_tags": ["student"],
+        "persona_tags": ["budget_buyer"],
+        "trust_signals": {"warranty_months": None, "certifications": []},
+        "agent_summary": "Edited summary.",
+        "confidence_score": 0.8,
+        "suggested_attributes": [
+            {"key": "Display Inches", "value": 14, "source": "product_text", "reason": "Title."},
+        ],
+    }
+    response = await client.post(
+        "/skus/SKU-1/review",
+        json=_review_payload("approve_with_edits", v.version_id, edited_enrichment=edited),
+        headers=auth_headers(admin.email),
+    )
+    assert response.status_code == 200
+
+    versions = await client.get("/skus/SKU-1/versions", headers=auth_headers(admin.email))
+    latest = versions.json()[0]
+    assert latest["generated_by"] == "human"
+    assert latest["suggested_attributes"] == [
+        {"key": "display_inches", "value": 14, "source": "product_text", "reason": "Title."}
+    ]
 
 
 @pytest.mark.asyncio

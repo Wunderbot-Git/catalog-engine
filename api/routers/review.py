@@ -18,7 +18,13 @@ from api.llm.base import (
     LLMSchemaValidationError,
     LLMTimeoutError,
 )
-from api.llm.types import CategoryContext, ProductContext, TrustSignals
+from api.llm.types import (
+    CategoryContext,
+    ProductContext,
+    SuggestedAttribute,
+    TrustSignals,
+    drop_existing_attributes,
+)
 from api.metrics import REVIEW_ACTIONS, TIME_TO_APPROVAL
 from api.models import (
     Assignment,
@@ -54,6 +60,7 @@ class EditedEnrichment(BaseModel):
     agent_summary: str
     confidence_score: float
     evidence_fields: List[str] = []
+    suggested_attributes: List[SuggestedAttribute] = []
 
 
 class ReviewRequest(BaseModel):
@@ -127,6 +134,9 @@ async def review_sku(
             agent_summary=body.edited_enrichment.agent_summary,
             confidence_score=body.edited_enrichment.confidence_score,
             evidence_fields=body.edited_enrichment.evidence_fields,
+            suggested_attributes=[
+                s.model_dump() for s in body.edited_enrichment.suggested_attributes
+            ],
         )
         db.add(new_version)
         db.flush()
@@ -217,6 +227,12 @@ async def review_sku(
             new_version.agent_summary = enrichment_data.agent_summary
             new_version.confidence_score = enrichment_data.confidence_score
             new_version.evidence_fields = enrichment_data.evidence_fields
+            new_version.suggested_attributes = [
+                s.model_dump()
+                for s in drop_existing_attributes(
+                    enrichment_data.suggested_attributes, product_ctx.attributes
+                )
+            ]
 
         db.add(new_version)
         db.flush()
@@ -310,6 +326,7 @@ async def get_versions(
                 "agent_summary": v.agent_summary,
                 "confidence_score": v.confidence_score,
                 "evidence_fields": v.evidence_fields or [],
+                "suggested_attributes": v.suggested_attributes or [],
                 "created_at": v.created_at.isoformat() if v.created_at else None,
                 "review_status": rs.review_status.value if rs else None,
                 "reviewer_id": str(rs.reviewer_id) if rs and rs.reviewer_id else None,
