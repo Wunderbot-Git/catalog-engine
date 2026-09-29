@@ -163,6 +163,7 @@ class EnrichmentVersion(Base):
     agent_summary = Column(Text, nullable=True)
     confidence_score = Column(Float, nullable=True)
     evidence_fields = Column(JSON, default=list)
+    suggested_attributes = Column(JSON, default=list)
     created_at = Column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     review_state = relationship("ReviewState", back_populates="version", uselist=False)

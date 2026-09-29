@@ -106,6 +106,7 @@ async def get_sku(
             "agent_summary": latest_version.agent_summary,
             "confidence_score": latest_version.confidence_score,
             "evidence_fields": latest_version.evidence_fields or [],
+            "suggested_attributes": latest_version.suggested_attributes or [],
             "created_at": latest_version.created_at.isoformat()
             if latest_version.created_at
             else None,

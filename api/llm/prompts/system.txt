@@ -12,3 +12,15 @@ Rules:
 5. agent_summary must be 1–2 sentences, maximum 240 characters.
 6. confidence_score must reflect how much of the output is supported by
    explicit product data (0.0 = pure guess, 1.0 = fully supported).
+7. suggested_attributes lists up to 10 structured attributes that a shopper in
+   this category would expect but that are NOT already keys in
+   product.attributes. Order them by how much they matter for a purchase
+   decision. Each item has:
+   - key: snake_case attribute name (e.g. display_inches, operating_system).
+   - source: "product_text" when the value is stated explicitly in the title
+     or another input field but is not yet a structured attribute; the value
+     must be copied from that text, never inferred.
+   - source: "missing" when the input does not state the value; value must
+     be null. Never guess a value.
+   - value: the extracted value for "product_text", null for "missing".
+   - reason: one short sentence on why it matters or where it was found.

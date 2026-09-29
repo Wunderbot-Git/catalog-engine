@@ -149,6 +149,7 @@ Every LLM run or human edit creates a new version. Never mutate existing version
 | `agent_summary` | text | max 240 chars |
 | `confidence_score` | float | |
 | `evidence_fields` | JSONB array | fields from input that support the enrichment |
+| `suggested_attributes` | JSONB array | attributes the product is missing (see 9.2.1) |
 | `created_at` | timestamp | |
 
 ---
@@ -362,15 +363,31 @@ class LLMClient(ABC):
   },
   "agent_summary": "string (max 240 chars)",
   "confidence_score": 0.0,
-  "evidence_fields": []
+  "evidence_fields": [],
+  "suggested_attributes": [
+    { "key": "string", "value": null, "source": "product_text | missing", "reason": "string" }
+  ]
 }
 ```
+
+#### 9.2.1 Suggested attributes
+
+The LLM also flags structured attributes a shopper in the category would expect but that are not keys in `product.attributes`:
+
+| `source` | Meaning | `value` |
+|---|---|---|
+| `product_text` | The value is stated explicitly in the title or another input field but is not a structured attribute yet | Required; copied from the input text |
+| `missing` | The input has no data for it; the catalog team must source it | Must be `null` |
+
+Suggestions are a catalog-quality signal for reviewers. They are stored on the version and editable in the review workspace, but they are **not** included in exports or Algolia sync.
 
 ### 9.3 Tag validation rules
 - Tags deduped and slugified (`snake_case`) before persisting
 - Max 10 tags per list
 - `agent_summary` max 240 characters
 - `confidence_score` must be 0.0–1.0
+- `suggested_attributes`: `key` slugified to `snake_case`, deduped by key (first wins), max 10; `value` must be null for `missing` and non-empty for `product_text`
+- Suggestions whose `key` already exists in `product.attributes` are dropped before persisting
 
 ### 9.4 Error handling
 
@@ -401,6 +418,18 @@ Rules:
 5. agent_summary must be 1–2 sentences, maximum 240 characters.
 6. confidence_score must reflect how much of the output is supported by
    explicit product data (0.0 = pure guess, 1.0 = fully supported).
+7. suggested_attributes lists up to 10 structured attributes that a shopper in
+   this category would expect but that are NOT already keys in
+   product.attributes. Order them by how much they matter for a purchase
+   decision. Each item has:
+   - key: snake_case attribute name (e.g. display_inches, operating_system).
+   - source: "product_text" when the value is stated explicitly in the title
+     or another input field but is not yet a structured attribute; the value
+     must be copied from that text, never inferred.
+   - source: "missing" when the input does not state the value; value must
+     be null. Never guess a value.
+   - value: the extracted value for "product_text", null for "missing".
+   - reason: one short sentence on why it matters or where it was found.
 ```
 
 ### 9.6 Controlled Vocabulary
@@ -466,7 +495,12 @@ Output:
   "trust_signals": { "warranty_months": null, "certifications": [], "sustainability_notes": "" },
   "agent_summary": "Affordable 15.6\" laptop for everyday tasks and light productivity. Ideal for students and home users on a budget.",
   "confidence_score": 0.82,
-  "evidence_fields": ["price", "processor", "ram_gb", "battery_hours"]
+  "evidence_fields": ["price", "processor", "ram_gb", "battery_hours"],
+  "suggested_attributes": [
+    {"key": "gpu", "value": null, "source": "missing", "reason": "Integrated vs dedicated graphics decides gaming and editing fit."},
+    {"key": "operating_system", "value": null, "source": "missing", "reason": "Shoppers filter laptops by Windows, ChromeOS or no OS."},
+    {"key": "display_resolution", "value": null, "source": "missing", "reason": "Resolution affects text sharpness on a 15.6\" screen."}
+  ]
 }
 ```
 
@@ -502,7 +536,12 @@ Output:
   "trust_signals": { "warranty_months": 24, "certifications": [], "sustainability_notes": "" },
   "agent_summary": "Professional OLED creator laptop with NPU and RTX 4070, built for video editing, 3D rendering, and local AI workloads.",
   "confidence_score": 0.94,
-  "evidence_fields": ["processor", "ram_gb", "gpu", "display_type", "warranty"]
+  "evidence_fields": ["processor", "ram_gb", "gpu", "display_type", "warranty"],
+  "suggested_attributes": [
+    {"key": "display_inches", "value": 16, "source": "product_text", "reason": "Title states a 16\" display."},
+    {"key": "weight_kg", "value": null, "source": "missing", "reason": "Portability matters for creators working on location."},
+    {"key": "battery_hours", "value": null, "source": "missing", "reason": "Battery life is a key comparison point for laptops."}
+  ]
 }
 ```
 
@@ -537,7 +576,12 @@ Output:
   "trust_signals": { "warranty_months": null, "certifications": [], "sustainability_notes": "" },
   "agent_summary": "Mid-range gaming laptop with RTX 3050 and 120Hz display, capable of running modern AAA titles at medium settings.",
   "confidence_score": 0.88,
-  "evidence_fields": ["gpu", "display_hz", "processor", "ram_gb"]
+  "evidence_fields": ["gpu", "display_hz", "processor", "ram_gb"],
+  "suggested_attributes": [
+    {"key": "display_inches", "value": 15.6, "source": "product_text", "reason": "Title states a 15.6\" display."},
+    {"key": "storage_gb", "value": null, "source": "missing", "reason": "Storage size limits how many games fit installed."},
+    {"key": "battery_hours", "value": null, "source": "missing", "reason": "Gaming laptops vary widely in battery life."}
+  ]
 }
 ```
 
@@ -605,6 +649,7 @@ Title, brand, category, price, key specs from `attributes`.
 - `trust_signals`: `warranty_months` number input, `certifications` chip input, `sustainability_notes` textarea
 - `agent_summary`: textarea with live counter (yellow at 200, red + blocked at 240)
 - `confidence_score`: read-only badge (yellow < 0.7, green ≥ 0.7)
+- `suggested_attributes`: list with key, source badge ("from text" / "missing"), editable value and reason; reviewer can remove a suggestion
 - Dirty state: "Approve with edits" active only when changes exist
 
 **Panel 4 — History + Comments (tabs)**

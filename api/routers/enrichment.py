@@ -16,7 +16,7 @@ from api.llm.base import (
     LLMSchemaValidationError,
     LLMTimeoutError,
 )
-from api.llm.types import CategoryContext, ProductContext
+from api.llm.types import CategoryContext, ProductContext, drop_existing_attributes
 from api.metrics import LLM_CALLS, LLM_LATENCY, SKUS_PROCESSED
 from api.models import (
     EnrichmentVersion,
@@ -108,6 +108,12 @@ async def enrich_sku(
         version.agent_summary = enrichment_data.agent_summary
         version.confidence_score = enrichment_data.confidence_score
         version.evidence_fields = enrichment_data.evidence_fields
+        version.suggested_attributes = [
+            s.model_dump()
+            for s in drop_existing_attributes(
+                enrichment_data.suggested_attributes, product_ctx.attributes
+            )
+        ]
 
     db.add(version)
     db.flush()
